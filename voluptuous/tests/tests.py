@@ -7,8 +7,8 @@ from voluptuous import (
     Url, MultipleInvalid, LiteralInvalid, NotIn, Match, Email,
     Replace, Range, Coerce, All, Any, Length, FqdnUrl, ALLOW_EXTRA, PREVENT_EXTRA,
     validate, ExactSequence, Equal, Unordered, Number, Maybe, Datetime, Date,
-    Contains, Marker)
-from voluptuous.humanize import humanize_error
+    Contains, Marker, truth, error)
+from voluptuous.humanize import humanize_error, validate_with_humanized_errors
 from voluptuous.util import to_utf8_py2, u
 
 
@@ -845,3 +845,15 @@ def test_validation_performance():
     schema(data_extra_keys)
 
     assert counter[0] <= num_of_keys, "Validation complexity is not linear! %s > %s" % (counter[0], num_of_keys)
+
+
+def test_custom_validator_appears_in_error_message():
+    @truth
+    def _failing_validator(task):
+        return False
+
+    try:
+        validate_with_humanized_errors({}, Schema(All(_failing_validator, {})))
+        assert False    # should not be reached
+    except error.Error as e:
+        assert '_failing_validator' in e.message
